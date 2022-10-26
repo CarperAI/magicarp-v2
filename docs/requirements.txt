@@ -1,0 +1,11 @@
+sphinx==4.0.0
+sphinx_rtd_theme
+accelerate
+datasets
+deepspeed
+einops
+numpy
+tqdm
+transformers
+wandb
+torchtyping
