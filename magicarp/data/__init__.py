@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from typing import Dict, Any
 from torchtyping import TensorType
 
+import torch
+from torch import Tensor 
+
 @dataclass
 class DataElement:
     """
@@ -15,10 +18,23 @@ class DataElement:
     :type nondatafields: Dict[str, Any]
     """
 
-    nondatafields : Dict[str, Any] = {}
+    nondatafields : Dict[str, Any] = None
 
+    def to(self, device : torch.device) -> 'DataElement':
+        """
+        Move all tensor attributes to a given device.
+
+        :param device: Device to move tensors to.
+        :type device: torch.device
+        """
+
+        for k, v in self.__dict__.items():
+            if isinstance(v, Tensor):
+                setattr(self, k, v.to(device))
+
+        return self
 @dataclass
-class TextElement:
+class TextElement(DataElement):
     """
     Element for any data originating as text. Used to provide input to language model.
     
@@ -29,11 +45,11 @@ class TextElement:
     :type attention_mask: torch.Tensor
     """
 
-    input_ids : TensorType["batch_size", "seq_len"]
-    attention_mask : TensorType["batch_size", "seq_len"]
+    input_ids : TensorType["batch_size", "seq_len"] = None
+    attention_mask : TensorType["batch_size", "seq_len"] = None
 
 @dataclass
-class ImageElement:
+class ImageElement(DataElement):
     """
     Element for any data originating as an image. Used to provide input to vision model.
     
@@ -41,7 +57,7 @@ class ImageElement:
     :type pixel_values: torch.Tensor
     """
 
-    pixel_values : TensorType["batch_size", "channels", "height", "width"]
+    pixel_values : TensorType["batch_size", "channels", "height", "width"] = None
 
 @dataclass
 class AudioElement:
@@ -52,4 +68,4 @@ class AudioElement:
     :type waveform: torch.Tensor
     """
 
-    waveform : TensorType["batch", "samples"]
+    waveform : TensorType["batch", "samples"] = None
