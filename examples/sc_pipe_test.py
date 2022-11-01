@@ -20,7 +20,15 @@ pipe.create_preprocess_fns(call_tok, "B")
 # Create loader
 loader = pipe.create_loader(device = 'cuda', batch_size=16, shuffle=True, num_workers=0)
 
+# Load model
+
+from magicarp.models import TextTextEncoder
+
+
+
 for batch in loader:
+
+    # Tests related to pipeline and collate function
     pass_, rev_ = batch
 
     assert type(pass_) == TextElement
@@ -31,4 +39,6 @@ for batch in loader:
 
     assert type(rev_.input_ids) == Tensor
     assert type(rev_.attention_mask) == Tensor
+
+    # Tests related to model processing of data
     break
