@@ -33,6 +33,17 @@ class DataElement:
                 setattr(self, k, v.to(device))
 
         return self
+    
+    def to_dict(self) -> Dict[str, Tensor]:
+        """
+        Convert all tensor attributes to a dictionary.
+
+        :return: Dictionary of tensor attributes.
+        :rtype: Dict[str, Tensor]
+        """
+
+        return {k : v for k, v in self.__dict__.items() if isinstance(v, Tensor)}
+        
 @dataclass
 class TextElement(DataElement):
     """

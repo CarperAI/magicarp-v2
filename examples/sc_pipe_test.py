@@ -1,4 +1,3 @@
-from transformers import AutoTokenizer
 from typing import Iterable
 from torch import Tensor
 import torch
@@ -8,37 +7,13 @@ from magicarp.pipeline.story_critique import StoryCritiquePipeline
 
 pipe = StoryCritiquePipeline("data/story_critique")
 
-tok = AutoTokenizer.from_pretrained("roberta-large")
-tok.add_tokens(["[quote]"])
-
-def call_tok(batch : Iterable[str]) -> Tensor:
-    return tok(batch, padding=True, truncation=True, max_length = 512, return_tensors="pt")
-
-pipe.create_preprocess_fns(call_tok, "A")
-pipe.create_preprocess_fns(call_tok, "B")
-
-# Create loader
-loader = pipe.create_loader(device = 'cuda', batch_size=16, shuffle=True, num_workers=0)
-
 # Load model
 
-from magicarp.models import TextTextEncoder
+from magicarp.models.texttext import TextTextEncoder
+from magicarp.configs import magiCARPConfig
+from magicarp.trainer import Trainer
 
-
-
-for batch in loader:
-
-    # Tests related to pipeline and collate function
-    pass_, rev_ = batch
-
-    assert type(pass_) == TextElement
-    assert type(rev_) == TextElement
-
-    assert type(pass_.input_ids) == Tensor
-    assert type(pass_.attention_mask) == Tensor
-
-    assert type(rev_.input_ids) == Tensor
-    assert type(rev_.attention_mask) == Tensor
-
-    # Tests related to model processing of data
-    break
+config = magiCARPConfig.load_yaml("configs/base_config.yml")
+model = TextTextEncoder(config.model)
+trainer = Trainer(model, config.train)
+trainer.train(pipe)

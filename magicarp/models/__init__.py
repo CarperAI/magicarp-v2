@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from torch import nn
 import torch
+from transformers import AutoConfig
 
 from magicarp.data import DataElement
 from magicarp.configs import ModelConfig
@@ -14,21 +15,27 @@ class ModelOutput:
     Container for the output of a model. This is used to provide a consistent API for all models.
     """
     loss : torch.Tensor = None
-    logits : torch.Tensor = None
+    scores : torch.Tensor = None
 
-class BaseCrossEncoder(nn.Module):
+class CrossEncoder(nn.Module):
+    """
+    Base class for any CrossEncoder model.
+    """
+    
     def __init__(self, config : ModelConfig):
-        super().___init__()
+        super().__init__()
+
+        tf_cfg = AutoConfig.from_pretrained(config.model_path)
+        self.score_head = nn.Linear(tf_cfg.hidden_size, 1)
     
     @abstractclassmethod
-    def  forward(self, input_A : DataElement, input_B : DataElement) -> ModelOutput:
+    def preprocess(self, input_A : Iterable[Any], input_B : Iterable[Any]) -> Any:
+        """
+        Preprocesses the input data into a format that can be fed into the model. Normally calls upon a feature extractor or a tokenizer.
+        """
         pass
 
-class TextTextEncoder(BaseCrossEncoder):
-    def __init__(self):
-        super().___init__()
-    
-    def  forward(self, input_A : DataElement, input_B : DataElement) -> ModelOutput:
+    @abstractclassmethod
+    def  forward(self, x : Iterable[DataElement]) -> ModelOutput:
         pass
 
-    
