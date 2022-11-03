@@ -1,25 +1,66 @@
 from abc import abstractclassmethod
 
-from torch.optim import AdamW
+from torch import optim
+import torch
+import wandb
+import os
 
 from magicarp.configs import TrainConfig
 from magicarp.models import CrossEncoder
 from magicarp.pipeline  import Pipeline
+from magicarp.utils import get_intervals, wandb_start
 
 class Trainer:
     def __init__(self, model : CrossEncoder, config : TrainConfig):
-        self.model = model
-        self.optimizer = AdamW(
+        self.model : torch.nn.Module = model
+
+        self.optimizer = optim.AdamW(
             self.model.parameters(),
             lr=config.learning_rate,
             weight_decay=config.weight_decay,
             eps=config.adam_epsilon
             )
-        self.config = config
+
+        rampup_Length = config.rampup_length
+        rampdown_Length = config.rampdown_length
+        final_learning_rate = config.final_learning_rate
+
+        # Scheduler with warmup and decay
+        self.scheduler = optim.lr_scheduler.OneCycleLR(
+            self.optimizer,
+            max_lr=config.learning_rate,
+            total_steps=rampup_Length + rampdown_Length,
+            pct_start=rampup_Length / (rampup_Length + rampdown_Length),
+            final_div_factor=final_learning_rate / config.learning_rate,
+            anneal_strategy="linear"
+        )
+
+        self.config : TrainConfig = config
+    
+    def load_checkpoint(self, path : str):
+        try:
+            self.model.load_state_dict(torch.load(f"{path}/model.pt"))
+            self.optimizer.load_state_dict(torch.load(f"{path}/optimizer.pt"))
+            self.scheduler.load_state_dict(torch.load(f"{path}/scheduler.pt"))
+        except:
+            print(f"Trainer could not load checkpoint from {path}")
+    
+    def save_checkpoint(self, path : str):
+        if not os.path.exists(path):
+            os.makedirs(path, exist_ok=True)
+        
+        torch.save(self.model.state_dict(), f"{path}/model.pt")
+        torch.save(self.optimizer.state_dict(), f"{path}/optimizer.pt")
+        torch.save(self.scheduler.state_dict(), f"{path}/scheduler.pt")
 
     def train(self, pipeline : Pipeline):
         epochs = self.config.num_epochs
-    
+        use_wandb = False
+
+        if self.config.wandb_project is not None:
+            wandb_start(self.config)
+            use_wandb = True
+
         if pipeline.prep is None:
             pipeline.create_preprocess_fn(self.model.preprocess)
         
@@ -31,9 +72,37 @@ class Trainer:
         )
 
         for epoch in range(epochs):
-            for batch in loader:
-                y = self.model(batch)
-                print(y)
-                break
+            for i, batch in enumerate(loader):
+                self.optimizer.zero_grad()
+
+                y = self.model(batch, return_loss = True)
+                loss = y.loss
+                loss.backward()
+
+                self.optimizer.step()
+                self.scheduler.step()
+
+                intervals = get_intervals(self.config, i)
+
+                if intervals["log"]:
+                    print(f"Epoch {epoch} | Batch {i} | Loss {loss}")
+                    if use_wandb:
+                        wandb.log({"loss": loss})
+                
+                if intervals["save"]:
+                    self.save_checkpoint(self.config.save_dir)
+                
+                if intervals["eval"]:
+                    # TODO 
+                    pass 
+
+
+                
+
+
+
+
+
+
 
 

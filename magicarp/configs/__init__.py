@@ -32,6 +32,11 @@ class TrainConfig:
     weight_decay : float = 0
     adam_epsilon : float = 1e-8
 
+    # Scheduler parameters
+    rampup_length : int = 400
+    rampdown_length : int = 1000
+    final_learning_rate : float = 1e-6
+
     # Training parameters
     num_epochs : int = 1
     batch_size : int = 16
