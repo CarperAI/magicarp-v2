@@ -5,6 +5,7 @@ from torchtyping import TensorType
 
 from transformers import AutoModel, AutoTokenizer, AutoFeatureExtractor
 from torch import nn
+import torch.nn.functional as F
 import torch
 
 from PIL import Image
@@ -40,10 +41,9 @@ class ImgTextEncoder(CrossEncoder):
         self.model = AutoModel.from_pretrained(model_path)
 
         # Add sep and cls tokens to the tokenizer
-        self.tokenizer.add_tokens(["[SEP]", "[CLS]"])
+        self.tokenizer.add_tokens(["[SEP]"])
         self.model.resize_token_embeddings(len(self.tokenizer))
 
-        self.cls_token_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
         self.pad_token_id = self.tokenizer.pad_token_id
 
         # Project image embedding to text embedding size if needed
@@ -53,8 +53,8 @@ class ImgTextEncoder(CrossEncoder):
             self.img_proj = None
         
         # How long should text be for it to be concatenated to image embeddings properly?
-        n_patches : int = (self.img_embedder.config.image_size // self.img_embedder.config.patch_size) ** 2
-        self.text_max_length : int = self.model.config.max_position_embeddings - n_patches - 1
+        self.n_patches : int = (self.img_embedder.config.image_size // self.img_embedder.config.patch_size) ** 2
+        self.text_max_length : int = self.model.config.max_position_embeddings - self.n_patches - 1
 
     def preprocess(self, input_A : Iterable[Image.Image], input_B : Iterable[str]) -> Any:
         """
@@ -85,7 +85,7 @@ class ImgTextEncoder(CrossEncoder):
             truncation=True,
             return_tensors="pt",
             max_length = self.model.config.max_position_embeddings
-            )
+        )
     
         return img_inputs, text_inputs
     
@@ -100,39 +100,35 @@ class ImgTextEncoder(CrossEncoder):
         
         # Use embedding layer from LM alone
         text_features : TensorType["batch", "sequence_length", "d_model"] = self.model.embeddings(text.input_ids)
+    
         text_features = text_features[:, :self.text_max_length, :]
-
+        text.attention_mask = text.attention_mask[:, :self.text_max_length]
         # Stitch together
         embs : TensorType["batch", "sequence", "d_model"] = torch.cat([img_features, text_features], dim=1)
 
-        # Append cls token to start
-        cls_token = torch.ones_like(embs[:, :1, :]) * self.cls_token_id
-        embs = torch.cat([cls_token, embs], dim=1)
-
         # Create new attention mask and incorporate 0s from the text mask
         attn_mask : TensorType["batch", "sequence"] = torch.ones_like(embs[:, :, 0])
-        attn_mask[:, self.n_patches + 1 :] = text.attention_mask
+        attn_mask[:, self.n_patches + 1:] = text.attention_mask
 
         # Now through LM
         out = self.model(
-            input_ids=embs,
+            inputs_embeds=embs,
             attention_mask=attn_mask,
             output_hidden_states=True,
             return_dict=True
-            )
+        )
 
         h : TensorType["batch", "seq_len", "d_model"] = out.hidden_states[-2]
 
         # Extract hidden state corresponding to CLS token (first token)
         cls_h : TensorType["batch", "d_model"] = h[:, 0, :]
 
-        scores = self.score_head(cls_h)
+        scores_pred = self.score_head(cls_h).squeeze()
         loss = None
-        if scores:
-            # todo
-            pass
-
+        if scores is not None:
+            loss = F.mse_loss(scores_pred, scores)
+            
         return ModelOutput(
-           scores=scores,
+           scores=scores_pred,
            loss=loss
         )        
