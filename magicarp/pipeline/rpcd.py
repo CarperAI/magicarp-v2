@@ -180,7 +180,11 @@ class RPCDPipeline(Pipeline):
 
             img_inputs, text_inputs = call_feature_extractor(img_batch, text_batch)
 
-            return [ImageElement(**img_inputs), TextElement(**text_inputs), scores]
+            return [
+                ImageElement(pixel_values=img_inputs.pixel_values).to(self.device),
+                TextElement(input_ids=text_inputs.input_ids, attention_mask=text_inputs.attention_mask).to(self.device),
+                scores
+            ]
         
         self.prep = prep
     
@@ -192,24 +196,22 @@ class RPCDPipeline(Pipeline):
             random.shuffle(self.ids)
         
         val_size = int(val_split * len(self.ids))
-        val_ids = self.ids[:val_split]
-        train_ids = self.ids[val_split:]
+        val_ids = self.ids[:val_size]
+        train_ids = self.ids[val_size:]
 
         self.ids = train_ids
 
-        self.val_set = RPCDValidation()
+        self.val_set = RPCDValidation(val_ids, self.root, self.device)
+        self.val_set.prep = self.prep
 
-    def create_validation_loader(self, device : torch.device = None, **kwargs) -> DataLoader:
+    def create_validation_loader(self, **kwargs) -> DataLoader:
         """
         Create a dataloader for validation data. 
         """
         if self.val_set is None:
             raise Exception("Validation set not created. Call partition_validation_set() first")
 
-        if device is None:
-            device = self.device
-
-        return DataLoader(self.val_set, device = device, **kwargs)
+        return self.val_set.create_loader(**kwargs)
 
 class RPCDValidation(RPCDPipeline):
     def __init__(self, ids : Iterable[int], root : str, device : torch.device):

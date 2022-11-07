@@ -114,7 +114,7 @@ class Pipeline(Dataset):
         pass
 
     @abstractclassmethod
-    def create_validation_loader(self, device : torch.device = None, **kwargs) -> DataLoader:
+    def create_validation_loader(self, **kwargs) -> DataLoader:
         """
         Create a dataloader for validation data. 
         """
