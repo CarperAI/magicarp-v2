@@ -1,5 +1,5 @@
 from abc import abstractclassmethod
-from typing import Tuple, Any, Dict, Iterable, Callable
+from typing import Tuple, Any, Dict, Iterable, Callable, Optional
 from torchtyping import TensorType
 from dataclasses import dataclass
 
@@ -46,17 +46,17 @@ class CrossEncoder(nn.Module):
         pass
 
     @abstractclassmethod
-    def  forward(self, x : Iterable[DataElement], return_loss : bool = False) -> ModelOutput:
+    def  forward(self, x : Iterable[DataElement], scores : Optional[TensorType["batch"]] = None) -> ModelOutput:
         """
         Forward call for CrossEncoder. Takes one or more DataElements and returns a ModelOutput
 
         :param x: One or more DataElements
         :type x: Iterable[DataElement]
 
-        :param return_loss: Whether to return the loss or not, defaults to False
-        :type return_loss: bool, optional
+        :param scores: Scores for pairwise relevance. If provided, loss is computed.
+        :type scores: Optional[TensorType["batch"]]
 
-        :return: Output of model, consisting of loss and scores.
+        :return: Output of model, consisting of loss (if scores provided) and scores.
         :rtype: ModelOutput
         """
         pass

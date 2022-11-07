@@ -24,7 +24,7 @@ class TextTextEncoder(CrossEncoder):
         """
         
         # Concatenate each string in A to each string in B, separated by a sep token and add a cls token to end
-        input_strings = [f"{a} [SEP] {b} [CLS]" for a, b in zip(input_A, input_B)]
+        input_strings = [f"[CLS] {a} [SEP] {b}" for a, b in zip(input_A, input_B)]
 
         return self.tokenizer(
             input_strings,
@@ -47,14 +47,12 @@ class TextTextEncoder(CrossEncoder):
             )
 
         h : TensorType["batch", "seq_len", "d_model"] = out.hidden_states[-2]
-        mask : TensorType["batch", "seq_len"] = x.attention_mask
 
-        # Masked pool along the sequence dimension
-        h *= mask[:, :, None]
-        h : TensorType["batch", "d_model"] = h.sum(dim=1) / mask.sum(dim=1)[:, None]
+        # Extract hidden state corresponding to CLS token (first token)
+        cls_h : TensorType["batch", "d_model"] = h[:, 0, :]
 
         return ModelOutput(
            scores=self.score_head(h)
-            )
+        )
     
 

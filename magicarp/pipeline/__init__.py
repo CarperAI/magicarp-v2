@@ -99,3 +99,23 @@ class Pipeline(Dataset):
             return res
 
         return DataLoader(self, collate_fn = collate, **kwargs)
+
+    @abstractclassmethod
+    def partition_validation_set(self, val_size : float = 0.1, shuffle : bool = False):
+        """
+        Partitions the dataset into a training and validation set. This function should be called before creating a dataloader.
+
+        :param val_size: The proportion of the dataset to use for validation. Defaults to 0.1.
+        :type val_size: float
+
+        :param shuffle: Whether to shuffle the dataset before partitioning. Defaults to True.
+        :type shuffle: bool
+        """
+        pass
+
+    @abstractclassmethod
+    def create_validation_loader(self, device : torch.device = None, **kwargs) -> DataLoader:
+        """
+        Create a dataloader for validation data. 
+        """
+        pass

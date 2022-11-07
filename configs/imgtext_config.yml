@@ -1,0 +1,9 @@
+model:
+  model_path: "google/vit-base-patch16-224,roberta-base"
+  tokenizer_path: "roberta-base"
+  sequence_length: 1024
+
+train:
+  learning_rate: 1.0e-4
+  batch_size: 4
+  pin_memory: False

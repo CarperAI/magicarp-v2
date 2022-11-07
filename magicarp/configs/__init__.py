@@ -47,7 +47,8 @@ class TrainConfig:
     log_interval : int = 100
     save_interval : int = 1000
     save_dir : str = None
-    eval_interval : int = 1000
+    val_interval : int = 1000
+    val_split : float = 0.1
 
     # Misc parameters
     device : str = "cuda"

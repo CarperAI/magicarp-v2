@@ -6,7 +6,7 @@ import wandb
 import os
 
 from magicarp.configs import TrainConfig
-from magicarp.models import CrossEncoder
+from magicarp.models import CrossEncoder, ModelOutput
 from magicarp.pipeline  import Pipeline
 from magicarp.utils import get_intervals, wandb_start
 
@@ -56,6 +56,7 @@ class Trainer:
     def train(self, pipeline : Pipeline):
         epochs = self.config.num_epochs
         use_wandb = False
+        do_val = False
 
         if self.config.wandb_project is not None:
             wandb_start(self.config)
@@ -63,6 +64,10 @@ class Trainer:
 
         if pipeline.prep is None:
             pipeline.create_preprocess_fn(self.model.preprocess)
+        
+        if self.config.val_split > 0:
+            do_val = True
+            pipeline.partition_validation_set(self.config.val_split)
         
         loader = pipeline.create_loader(
             batch_size=self.config.batch_size,
@@ -72,10 +77,10 @@ class Trainer:
         )
 
         for epoch in range(epochs):
-            for i, batch in enumerate(loader):
+            for i, (a, b, scores) in enumerate(loader):
                 self.optimizer.zero_grad()
 
-                y = self.model(batch, return_loss = True)
+                y : ModelOutput = self.model((a, b), scores)
                 loss = y.loss
                 loss.backward()
 
@@ -92,9 +97,33 @@ class Trainer:
                 if intervals["save"]:
                     self.save_checkpoint(self.config.save_dir)
                 
-                if intervals["eval"]:
-                    # TODO 
-                    pass 
+                if intervals["val"] and do_val:
+                    self.validate(pipeline)
+
+    def validate(self, pipeline : Pipeline):
+        loader = pipeline.create_validation_loader(
+            batch_size=self.config.batch_size,
+            num_workers=self.config.num_workers,
+            shuffle=False,
+            pin_memory=self.config.pin_memory
+        )
+
+        avg_loss = 0
+        steps = len(loader)
+
+        with torch.no_grad():
+            for i, (a, b, scores) in enumerate(loader):
+                y : ModelOutput = self.model((a, b), scores)
+                loss = y.loss
+                avg_loss += loss
+
+        avg_loss /= steps
+        print(f"Validation Loss: {avg_loss}")
+        if self.config.wandb_project is not None:
+            wandb.log({"val_loss": avg_loss})
+
+
+        
 
 
                 
