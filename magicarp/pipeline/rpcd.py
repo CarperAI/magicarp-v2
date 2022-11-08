@@ -100,8 +100,9 @@ def load_comments(root, id):
             # (i.e. top-level comments)
             df = df[df["comment_depth"] == 0]
 
-            # Sort by upvote count descending
-            df = df.sort_values(by="comment_score", ascending=False)
+            # Sort by absolute value of score
+            df["absolute_score"] = df["comment_score"].apply(lambda x: abs(x))
+            df = df.sort_values(by="absolute_score", ascending=False)
 
             # return list of comments
             comments = df["comment_body"].tolist()   
@@ -110,6 +111,17 @@ def load_comments(root, id):
             return list(zip(comments, score))
 
     raise Exception(f"No comment file for id: {id}")
+
+def weighted_sample(comments : List[Tuple[str, float]]) -> Tuple[str, float]:
+    # Weighted sample that favors comments earlier in list (corresponding to higher absolute score)
+    # Compute weights
+    weights = [1 / (i + 1) for i in range(len(comments))]
+    weights = np.array(weights)
+    weights /= weights.sum()
+
+    # Sample
+    idx = np.random.choice(len(comments), p=weights)
+    return comments[idx]
 
 # =======================================
         
@@ -167,7 +179,7 @@ class RPCDPipeline(Pipeline):
         comments = load_comments(self.root, id)
 
         # Return top comment
-        return img, random.choice(comments)
+        return img, weighted_sample(comments)
     
     def create_preprocess_fn(self, call_feature_extractor: Callable[[Iterable[Any]], Any]):
         def prep(batch_A : Iterable[str], batch_B : Iterable[Tuple[str, float]]) \
