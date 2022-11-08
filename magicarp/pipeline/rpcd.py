@@ -74,7 +74,7 @@ def load_img(root, id):
     return img
 
 def score_map(x : float) -> float:
-    return np.tanh(0.154 * (x - 1))
+    return 0.5 + 0.5 * np.tanh(0.154 * (x - 1))
 
 # Given an  id, return list of strings corresponding to comments
 # for said image
@@ -105,14 +105,14 @@ def load_comments(root, id):
 
             # return list of comments
             comments = df["comment_body"].tolist()   
-            score = df["comment_score"].map(lambda x : np.tanh(float(x))).tolist()
+            score = df["comment_score"].map(lambda x : score_map(float(x))).tolist()
 
             return list(zip(comments, score))
 
     raise Exception(f"No comment file for id: {id}")
 
 # =======================================
-
+        
 class RPCDPipeline(Pipeline):
     def __init__(self, path, device : torch.device, force_new : bool = False, min_comments : int = 10):
         super().__init__()
@@ -167,7 +167,7 @@ class RPCDPipeline(Pipeline):
         comments = load_comments(self.root, id)
 
         # Return top comment
-        return img, comments[0]
+        return img, random.choice(comments)
     
     def create_preprocess_fn(self, call_feature_extractor: Callable[[Iterable[Any]], Any]):
         def prep(batch_A : Iterable[str], batch_B : Iterable[Tuple[str, float]]) \
