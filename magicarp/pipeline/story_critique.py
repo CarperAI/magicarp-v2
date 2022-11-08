@@ -19,8 +19,7 @@ class StoryCritiquePipeline(Pipeline):
     def __init__(self, path : str):
         super().__init__()
 
-        self.prep_A : Callable[[Iterable[str]], TextElement] = None
-        self.prep_B : Callable[[Iterable[str]], TextElement] = None
+        self.prep : Callable[[Iterable[str], Iterable[str]], TextElement] = None
 
         dataset = load_from_disk(path)
         train = dataset["train"]
@@ -51,16 +50,11 @@ class StoryCritiquePipeline(Pipeline):
     def __len__(self) -> int:
         return len(self.passages)
     
-    def create_preprocess_fns(self, call_feature_extractor: Callable[[Iterable[Any]], Any], modality: str):
-        def prep(batch : Iterable[str]) -> TextElement:
-            return TextElement(**call_feature_extractor(batch))
+    def create_preprocess_fn(self, call_feature_extractor: Callable[[Iterable[Any]], Any]):
+        def prep(batch_A : Iterable[str], batch_B : Iterable[str]) -> TextElement:
+            return TextElement(**call_feature_extractor(batch_A, batch_B))
 
-        if modality == "A":
-            self.prep_A = prep
-        elif modality == "B":
-            self.prep_B = prep
-        else:
-            raise ValueError("Modality must be either 'A' or 'B'.")
+        self.prep = prep
         
 
 

@@ -12,8 +12,6 @@ Welcome to magiCARP-v2's documentation!
 
    data
 
-
-
 Indices and tables
 ==================
 

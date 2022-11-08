@@ -40,10 +40,9 @@ class Pipeline(Dataset):
     def __init__(self):
         super().__init__()
 
-        # Preprocessing functions for the two different modalities
-        # create_preprocess_fn must be called to set both
-        self.prep_A : Callable[[Iterable[Any]], DataElement] = None
-        self.prep_B : Callable[[Iterable[Any]], DataElement] = None
+        # Preprocessing function for both modalities
+        # Can return a single data element or multiple
+        self.prep : Callable[[Iterable[Any], Iterable[Any]], Iterable[DataElement]]
     
     @abstractclassmethod
     def __getitem__(self, idx : int) -> Tuple[Any, Any]:
@@ -53,24 +52,17 @@ class Pipeline(Dataset):
     def __len__(self) -> int:
         pass
 
-    def create_preprocess_fns(self, call_feature_extractor : Callable[[Iterable[Any]],  Any], modality : str):
+    def create_preprocess_fn(self, call_feature_extractor : Callable[[Iterable[Any], Iterable[Any]],  Any]):
         """
-        Function factory that generates and sets preprocessing functions for the pipeline. Default behavior is 
-        to simply use call_feature_extractor as the entire preprocess function for given modality.
+        Function factory that generates and sets preprocessing function for the pipeline. Default behavior is 
+        to simply use call_feature_extractor as the entire preprocess function.
 
         :param call_feature_extractor: Function that takes in a batch of data and returns a batch of features. i.e. a tokenizer.
         :type call_feature_extractor: Callable[[Iterable[Any]],  Any]
 
-        :param modality: Modality to create preprocessing function for. Must be either "A" or "B".
-        :type modality: str
         """
     
-        if modality == "A":
-            self.prep_A = call_feature_extractor
-        elif modality == "B":
-            self.prep_B = call_feature_extractor
-        else:
-            raise ValueError("Modality must be either 'A' or 'B'.")
+        self.prep = call_feature_extractor
 
     def create_loader(self, device : torch.device = None, **kwargs) -> DataLoader:
         """
@@ -86,8 +78,8 @@ class Pipeline(Dataset):
         :rtype: DataLoader
         """
 
-        if self.prep_A is None or self.prep_B is None:
-            raise ValueError("Preprocessing functions must be set before creating a dataloader.")
+        if self.prep is None:
+            raise ValueError("Preprocessing function must be set before creating a dataloader.")
         
         def collate(batch : Iterable[Tuple[Any, Any]]) -> Tuple[DataElement, DataElement]:
             """
@@ -98,13 +90,32 @@ class Pipeline(Dataset):
             data_A = list(data_A)
             data_B = list(data_B)
 
-            data_A = self.prep_A(data_A)
-            data_B = self.prep_B(data_B)
-
-            if device is not None:
-                data_A = data_A.to(device)
-                data_B = data_B.to(device)
+            res = self.prep(data_A, data_B)
+            if type(res) is list or type(res) is tuple:
+                res = [r.to(device) for r in res]
+            else:
+                res = res.to(device)
             
-            return data_A, data_B
+            return res
 
         return DataLoader(self, collate_fn = collate, **kwargs)
+
+    @abstractclassmethod
+    def partition_validation_set(self, val_size : float = 0.1, shuffle : bool = False):
+        """
+        Partitions the dataset into a training and validation set. This function should be called before creating a dataloader.
+
+        :param val_size: The proportion of the dataset to use for validation. Defaults to 0.1.
+        :type val_size: float
+
+        :param shuffle: Whether to shuffle the dataset before partitioning. Defaults to True.
+        :type shuffle: bool
+        """
+        pass
+
+    @abstractclassmethod
+    def create_validation_loader(self, **kwargs) -> DataLoader:
+        """
+        Create a dataloader for validation data. 
+        """
+        pass
