@@ -8,6 +8,8 @@ from torch import nn
 import torch.nn.functional as F
 import torch
 
+from axial_positional_embedding import AxialPositionalEmbedding
+
 from PIL import Image
 
 from magicarp.data import TextElement, ImageElement
@@ -56,6 +58,12 @@ class ImgTextEncoder(CrossEncoder):
         self.n_patches : int = (self.img_embedder.config.image_size // self.img_embedder.config.patch_size) ** 2
         self.text_max_length : int = self.model.config.max_position_embeddings - self.n_patches - 1
 
+        # 2d pos enc for ViT
+        self.img_pos_enc = AxialPositionalEmbedding(
+            dim = self.model.config.hidden_size,
+            axial_shape = (int(self.n_patches ** 0.5), int(self.n_patches ** 0.5))
+        )
+
     def preprocess(self, input_A : Iterable[Image.Image], input_B : Iterable[str]) -> Any:
         """
         Preprocess images into tensors and text into tokens without any padding or truncation.
@@ -97,6 +105,9 @@ class ImgTextEncoder(CrossEncoder):
         img_features : TensorType["batch", "n_patches + 1", "d_model"] = self.img_embedder(**img.to_dict()).last_hidden_state
         if self.img_proj:
             img_features = self.img_proj(img_features)
+
+        # 2d pos enc, skip cls token    
+        img_features[1:] += self.img_pos_enc(img_features[1:])
         
         # Use embedding layer from LM alone
         text_features : TensorType["batch", "sequence_length", "d_model"] = self.model.embeddings(text.input_ids)
