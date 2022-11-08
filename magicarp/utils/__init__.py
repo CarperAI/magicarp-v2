@@ -30,4 +30,4 @@ def wandb_start(config : TrainConfig):
     :param config: The config to use for wandb.
     :type config: TrainConfig
     """
-    wandb.init(project=config.wandb_project, entity=config.wandb_entity, config=config)
+    wandb.init(project=config.wandb_project, entity=config.wandb_entity, config=config.__dict__)
