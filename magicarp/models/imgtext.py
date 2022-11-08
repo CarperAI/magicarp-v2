@@ -156,7 +156,7 @@ class ImgTextEncoder(CrossEncoder):
         loss = None
         if scores is not None:
             # As per sentence transformers, BCE with logits is better than MSE
-            loss = F.binary_cross_entropy_with_logits(scores_pred, scores)
+            loss = self.loss_fn(scores_pred, scores)
             
         return ModelOutput(
            scores=scores_pred,

@@ -62,6 +62,7 @@ class Trainer:
 
         if self.config.wandb_project is not None:
             wandb_start(self.config)
+            wandb.watch(self.model)
             use_wandb = True
 
         if pipeline.prep is None:

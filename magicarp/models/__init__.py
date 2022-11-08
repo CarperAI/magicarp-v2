@@ -28,6 +28,11 @@ class CrossEncoder(nn.Module):
 
         tf_cfg = AutoConfig.from_pretrained(config.model_path)
         self.score_head = nn.Linear(tf_cfg.hidden_size, 1)
+
+        self.loss_fn : Callable = None
+    
+    def set_loss_fn(self, loss_fn : Callable):
+        self.loss_fn = loss_fn
     
     @abstractclassmethod
     def preprocess(self, input_A : Iterable[Any], input_B : Iterable[Any]) -> Any:
