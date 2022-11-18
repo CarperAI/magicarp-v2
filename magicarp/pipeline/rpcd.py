@@ -45,6 +45,7 @@ def filter_id(path, id, threshold = 10):
             # 3. 
             try:
                 df = pd.read_csv(path)
+                df = df[df["comment_depth"] == 0]
                 if df.empty or len(df) <= threshold:
                     del df
                     return False
@@ -100,13 +101,13 @@ def load_comments(root, id):
             # (i.e. top-level comments)
             df = df[df["comment_depth"] == 0]
 
-            # Sort by absolute value of score
-            df["absolute_score"] = df["comment_score"].apply(lambda x: abs(x))
-            df = df.sort_values(by="absolute_score", ascending=False)
+            df = df.sort_values(by="comment_score", ascending=False)
 
             # return list of comments
             comments = df["comment_body"].tolist()   
-            score = df["comment_score"].map(lambda x : score_map(float(x))).tolist()
+            score = df["comment_score"]
+            #score = score.map(lambda x : score_map(float(x)))
+            score = score.tolist()
 
             return list(zip(comments, score))
 
@@ -126,7 +127,22 @@ def weighted_sample(comments : List[Tuple[str, float]]) -> Tuple[str, float]:
 # =======================================
         
 class RPCDPipeline(Pipeline):
-    def __init__(self, path, device : torch.device, force_new : bool = False, min_comments : int = 10):
+    """
+    Pipeline for the Reddit Photography Critique Dataset
+
+    :param path: Path to the dataset
+    :type path: str
+
+    :param device: Device to load data onto
+    :type device: torch.device
+
+    :param force_new: Whether to force a new preprocessing for loading ids for posts/comments
+    :type force_new: bool
+
+    :param min_comments: Minimum number of comments for a post to be included in the dataset
+    :type min_comments: int
+    """
+    def __init__(self, path : str, device : torch.device, force_new : bool = False, min_comments : int = 5):
         super().__init__()
 
         self.prep : Callable[[
@@ -182,7 +198,7 @@ class RPCDPipeline(Pipeline):
         return img, weighted_sample(comments)
     
     def create_preprocess_fn(self, call_feature_extractor: Callable[[Iterable[Any]], Any]):
-        def prep(batch_A : Iterable[str], batch_B : Iterable[Tuple[str, float]]) \
+        def prep(batch_A : Iterable[Image.Image], batch_B : Iterable[Tuple[str, float]]) \
             -> Iterable[DataElement]:
 
             img_batch = batch_A
@@ -229,4 +245,78 @@ class RPCDValidation(RPCDPipeline):
     def __init__(self, ids : Iterable[int], root : str, device : torch.device):
         super().__init__(root, device, force_new = False)
         self.ids = ids
+
+# RPCD pipeline for instruct type rerankers
+# Main difference is that get item returns an image and ALL comments
+# on that image
+# The instructGPT reward model is trained with each batch being a single
+# prompt and all its responses
+
+class InstructRPCD(RPCDPipeline):
+    def __init__(self, max_comments : int = 9, **kwargs):
+        super().__init__(**kwargs)
+
+        self.max_comments = max_comments
+
+        self.prep_fn : Callable[
+            [
+                Iterable[Image.Image],
+                Iterable[Iterable[str]]
+            ],
+            Iterable[DataElement] # [ImageElement, TextElement, TextElement, ...] 
+        ]
+
+    def __getitem__(self, idx):
+        id = self.ids[idx]
+        img = load_img(self.root, id)
+        comments = load_comments(self.root, id)
+        return img, comments[:self.max_comments]
+
+    def create_preprocess_fn(self, call_feature_extractor : Callable):
+        def prep(batch_A : Iterable[Image.Image], batch_B : Iterable[Iterable[str]]) \
+            -> Iterable[DataElement]:
+            img_batch = batch_A
+            text_batch : Iterable[str] = batch_B[0]
+
+            img_inputs, txt_inputs = call_feature_extractor(img_batch, text_batch)
+
+            return [
+                ImageElement(pixel_values=img_inputs.pixel_values).to(self.device),
+                TextElement(input_ids=txt_inputs.input_ids, attention_mask=txt_inputs.attention_mask).to(self.device)
+            ]
+        
+        self.prep = prep
+
+    def partition_validation_set(self, val_split : float = 0.1, shuffle : bool = False):
+        if val_split is None:
+            raise Exception("Validation split must be specified to use validation set")
+
+        if shuffle:
+            random.shuffle(self.ids)
+        
+        val_size = int(val_split * len(self.ids))
+        val_ids = self.ids[:val_size]
+        train_ids = self.ids[val_size:]
+
+        self.ids = train_ids
+
+        self.val_set = InstructRPCDValidation(val_ids, self.root, self.device)
+        self.val_set.prep = self.prep
+    
+    # Force loader to take batch size of 1
+    def create_loader(self, **kwargs):
+        # remote batch size from kwargs if its there
+        kwargs.pop("batch_size", None)
+        return super().create_loader(batch_size=1, **kwargs)
+
+
+class InstructRPCDValidation(InstructRPCD):
+    def __init__(self, ids : Iterable[int], root : str, device : torch.device):
+        super().__init__(path = root, device = device, force_new = False)
+        self.ids = ids
+
+    
+
+
+    
 
