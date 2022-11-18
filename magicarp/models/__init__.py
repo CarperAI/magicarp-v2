@@ -30,6 +30,7 @@ class CrossEncoder(nn.Module):
         self.score_head = nn.Linear(tf_cfg.hidden_size, 1)
 
         self.loss_fn : Callable = None
+        self.set_loss_fn(torch.nn.MSELoss()) # Defaults to MSE
     
     def set_loss_fn(self, loss_fn : Callable):
         self.loss_fn = loss_fn
@@ -51,15 +52,18 @@ class CrossEncoder(nn.Module):
         pass
 
     @abstractclassmethod
-    def  forward(self, x : Iterable[DataElement], scores : Optional[TensorType["batch"]] = None) -> ModelOutput:
+    def  forward(self, x : Iterable[DataElement], scores : Optional[TensorType["batch"]] = None, compute_loss : bool = False) -> ModelOutput:
         """
         Forward call for CrossEncoder. Takes one or more DataElements and returns a ModelOutput
 
         :param x: One or more DataElements
         :type x: Iterable[DataElement]
 
-        :param scores: Scores for pairwise relevance. If provided, loss is computed.
+        :param scores: Scores for pairwise relevance.
         :type scores: Optional[TensorType["batch"]]
+
+        :param compute_loss: Whether to compute loss or not.
+        :type compute_loss: bool
 
         :return: Output of model, consisting of loss (if scores provided) and scores.
         :rtype: ModelOutput
