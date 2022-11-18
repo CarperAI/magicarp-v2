@@ -1,4 +1,3 @@
-
 from typing import Iterable, Any, Tuple, Optional
 from dataclasses import replace
 from torchtyping import TensorType
@@ -103,7 +102,8 @@ class ImgTextEncoder(CrossEncoder):
     
         return img_inputs, text_inputs
     
-    def forward(self, x : Tuple[ImageElement, TextElement], scores : Optional[TensorType["batch"]]):
+    def forward(self, x : Tuple[ImageElement, TextElement], scores : Optional[TensorType["batch"]],
+                compute_loss : bool = False)  -> ModelOutput:
         img : ImageElement = x[0]
         text : TextElement = x[1]
 
