@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Dict, Any, Iterable
 from torchtyping import TensorType
 
 import torch
@@ -43,6 +43,24 @@ class DataElement:
         """
 
         return {k : v for k, v in self.__dict__.items() if isinstance(v, Tensor)}
+
+    @staticmethod
+    def concatenate(data : Iterable['DataElement']) -> 'DataElement':
+        """
+        Produce a new data element by concatenating all tensor attributes of the
+        input data elements. All input data elements must have same type
+        """
+        # Verify all elements of data are same type
+        assert len(set([type(d) for d in data])) == 1, "All data elements must be same type"
+
+        cls = type(data[0])
+        res = cls(
+            **{k : torch.cat([getattr(d, k) for d in data], dim=0) for k in data[0].__dict__.keys()}
+        )
+
+        return res
+
+
         
 @dataclass
 class TextElement(DataElement):

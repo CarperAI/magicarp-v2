@@ -5,7 +5,9 @@ model:
 
 train:
   learning_rate: 1.0e-4
-  batch_size: 16
+  batch_size: 1
   pin_memory: False
   log_interval: 1
   val_interval: 10
+  wandb_project: "magicarp2"
+  wandb_entity: "shahbuland"
