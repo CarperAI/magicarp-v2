@@ -149,10 +149,15 @@ class ImgTextEncoder(CrossEncoder):
 
         h : TensorType["batch", "sequence", "d_model"] = out.hidden_states[-2]
 
-        # Extract hidden state corresponding to CLS token (first token)
-        cls_h : TensorType["batch", "d_model"] = h[:, 0, :]
+        if self.config.embed_method == "cls":
+            h : TensorType["b", "d"] = h[:, 0, :]
+        elif self.config.embed_method == "mean":
+            h : TensorType["b", "d"] = h.mean(dim=1)
+        elif self.config.embed_method == "masked_sum_pool":
+            h : TensorType["b", "d"] = (h * attn_mask.unsqueeze(-1)).sum(dim=1)
+            h = F.normalize(h, dim=-1)
 
-        scores_pred = self.score_head(cls_h).squeeze()
+        scores_pred = self.score_head(h).squeeze()
         loss = None
         if scores is not None:
             # As per sentence transformers, BCE with logits is better than MSE
