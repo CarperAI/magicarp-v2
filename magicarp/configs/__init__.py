@@ -11,12 +11,19 @@ class ModelConfig:
 
     :param model_type: Name of registered model to use. This is used to determine the model class to use. If multiple, separate with a comma.
     :type model_type: str
+
+    :param sequence_length: Maximum sequence length for the model. May not always be used over model_position_embeddings
+    :type sequence_length: int
+
+    :param embed_method: Method to use for embedding i.e. cls embedding, mean pooling, etc. Not used by all methods.
+    :type embed_method: str
     """
     
     model_path : str = None
     tokenizer_path : str = None
     model_type : Optional[str] = None
     sequence_length : int = 1024
+    embed_method : str = None
 
     @classmethod
     def from_dict(cls, config: Dict[str, Any]):
