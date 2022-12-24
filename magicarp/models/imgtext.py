@@ -105,7 +105,7 @@ class ImgTextEncoder(CrossEncoder):
     def forward(
         self,
         x : Tuple[ImageElement, TextElement],
-        scores : Optional[TensorType["batch"]]
+        scores : Optional[TensorType["batch"]] = None
     ) -> ModelOutput:
         img : ImageElement = x[0]
         text : TextElement = x[1]

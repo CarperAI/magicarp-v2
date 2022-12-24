@@ -4,7 +4,7 @@ import torch
 
 from magicarp.pipeline.rpcd import InstructRPCD
 
-from magicarp.models.instruct_imgtext import InstructImgText
+from magicarp.models.imgtext import ImgTextEncoder
 from magicarp.configs import magiCARPConfig
 from magicarp.trainer import Trainer
 
@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     # Load model
     config = magiCARPConfig.load_yaml("configs/imgtext_config.yml")
-    model = InstructImgText(config.model)
+    model = ImgTextEncoder(config.model)
 
     trainer = Trainer(model, config.train)
     trainer.train(pipe)

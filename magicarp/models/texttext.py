@@ -64,7 +64,7 @@ class TextTextEncoder(CrossEncoder):
     def forward(
         self,
         x : Tuple[TextElement, TextElement],
-        scores : Optional[TensorType["batch"]]
+        scores : Optional[TensorType["batch"]] = None
     ) -> ModelOutput:
 
         text_A = x[0]
@@ -80,7 +80,7 @@ class TextTextEncoder(CrossEncoder):
 
         h : TensorType["b", "n", "d"] = features.hidden_states[-2]
         h = self.embed(h)
-        
+
         scores_pred = self.score_head(h).squeeze()
         loss = None
         if scores is not None:
