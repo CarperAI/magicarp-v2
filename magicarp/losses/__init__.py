@@ -33,13 +33,6 @@ def register_loss(name):
 
     return cls
 
-def get_loss(name):
-    """Get a loss function by name
-    Args:
-        name: Name of the loss
-    """
-    return _LOSSES[name.lower()]
-
 class CrossEncoderLoss(nn.Module):
     """
         Abstract base for all cross-encoder (reward model/reranker) losses.
@@ -50,7 +43,7 @@ class CrossEncoderLoss(nn.Module):
     def __init__(self, config : TrainConfig):
         super().__init__()
         self.query = config.query_modality
-        
+
 class EndLoss(CrossEncoderLoss):
     """
         Abstract class for losses where scores are given at end of sequence.
