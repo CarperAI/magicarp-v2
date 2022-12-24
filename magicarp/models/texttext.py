@@ -64,8 +64,8 @@ class TextTextEncoder(CrossEncoder):
     def forward(
         self,
         x : Tuple[TextElement, TextElement],
-        scores : Optional[TensorType["batch"]],
-        compute_loss : bool = False) -> ModelOutput:
+        scores : Optional[TensorType["batch"]]
+    ) -> ModelOutput:
 
         text_A = x[0]
         text_B = x[1]
@@ -79,16 +79,8 @@ class TextTextEncoder(CrossEncoder):
         )
 
         h : TensorType["b", "n", "d"] = features.hidden_states[-2]
-        if self.config.embed_method == "cls":
-            h : TensorType["b", "d"] = h[:, 0, :]
-        elif self.config.embed_method == "mean":
-            h : TensorType["b", "d"] = h.mean(dim=1)
-        elif self.config.embed_method == "masked_sum_pool":
-            h : TensorType["b", "d"] = (h * attn_mask.unsqueeze(-1)).sum(dim=1)
-            h = F.normalize(h, dim=-1)
-        else:
-            raise ValueError(f"Embed method {self.config.embed_method} not supported")
-
+        h = self.embed(h)
+        
         scores_pred = self.score_head(h).squeeze()
         loss = None
         if scores is not None:

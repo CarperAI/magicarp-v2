@@ -102,8 +102,11 @@ class ImgTextEncoder(CrossEncoder):
     
         return img_inputs, text_inputs
     
-    def forward(self, x : Tuple[ImageElement, TextElement], scores : Optional[TensorType["batch"]],
-                compute_loss : bool = False)  -> ModelOutput:
+    def forward(
+        self,
+        x : Tuple[ImageElement, TextElement],
+        scores : Optional[TensorType["batch"]]
+    ) -> ModelOutput:
         img : ImageElement = x[0]
         text : TextElement = x[1]
 
@@ -148,19 +151,11 @@ class ImgTextEncoder(CrossEncoder):
         )
 
         h : TensorType["batch", "sequence", "d_model"] = out.hidden_states[-2]
-
-        if self.config.embed_method == "cls":
-            h : TensorType["b", "d"] = h[:, 0, :]
-        elif self.config.embed_method == "mean":
-            h : TensorType["b", "d"] = h.mean(dim=1)
-        elif self.config.embed_method == "masked_sum_pool":
-            h : TensorType["b", "d"] = (h * attn_mask.unsqueeze(-1)).sum(dim=1)
-            h = F.normalize(h, dim=-1)
+        h = self.embed(h)
 
         scores_pred = self.score_head(h).squeeze()
         loss = None
         if scores is not None:
-            # As per sentence transformers, BCE with logits is better than MSE
             loss = self.loss_fn(scores_pred, scores)
             
         return ModelOutput(
