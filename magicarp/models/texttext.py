@@ -79,7 +79,7 @@ class TextTextEncoder(CrossEncoder):
         )
 
         h : TensorType["b", "n", "d"] = features.hidden_states[-2]
-        h = self.embed(h)
+        h = self.embed(h, attn_mask)
 
         scores_pred = self.score_head(h).squeeze()
         loss = None
