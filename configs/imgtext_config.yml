@@ -2,6 +2,7 @@ model:
   model_path: "google/vit-base-patch16-224,bert-base-uncased"
   tokenizer_path: "bert-base-uncased"
   sequence_length: 514
+  embed_method: "cls"
 
 train:
   learning_rate: 1.0e-4
@@ -9,5 +10,5 @@ train:
   pin_memory: False
   log_interval: 1
   val_interval: 10
-  wandb_project: "magicarp2"
-  wandb_entity: "shahbuland"
+  #wandb_project: "magicarp2"
+  #wandb_entity: "shahbuland"

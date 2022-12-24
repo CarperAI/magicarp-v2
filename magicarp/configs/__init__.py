@@ -32,8 +32,22 @@ class ModelConfig:
 @dataclass
 class TrainConfig:
     """
+    Configuration for trainer.
 
+    :param loss_type: Type of loss to use. Options are instructranking, pairwise, densepairwise
+    :type loss_type: str
+
+    :param reward_type: Type of reward to use. Options are End or Step. End means reward is computed at final step, Step means reward is computed at every step.
+    :type reward_type: str
+
+    :param query_modality: Which modality to use as query (as opposed to response). Options are A or B. I.e. in image generation the prompt is the query.
+    :type query_modality: str
     """
+    # Loss
+    loss_type : str = None
+    reward_type : str = "End"
+    query_modality : str = "A"
+
     # Optimizer parameters
     learning_rate : float = 1e-4
     weight_decay : float = 0
