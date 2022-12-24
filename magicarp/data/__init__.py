@@ -20,6 +20,13 @@ class DataElement:
 
     nondatafields : Dict[str, Any] = None
 
+    def __len__(self) -> int:
+        """
+        Return the length of the first tensor attribute. All tensor attributes
+        are expected to be of the same length.
+        """
+        return len(next(v for k, v in self.__dict__.items() if isinstance(v, Tensor)))
+
     def to(self, device : torch.device) -> 'DataElement':
         """
         Move all tensor attributes to a given device.

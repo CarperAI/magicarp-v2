@@ -102,8 +102,11 @@ class ImgTextEncoder(CrossEncoder):
     
         return img_inputs, text_inputs
     
-    def forward(self, x : Tuple[ImageElement, TextElement], scores : Optional[TensorType["batch"]],
-                compute_loss : bool = False)  -> ModelOutput:
+    def forward(
+        self,
+        x : Tuple[ImageElement, TextElement],
+        scores : Optional[TensorType["batch"]]
+    ) -> ModelOutput:
         img : ImageElement = x[0]
         text : TextElement = x[1]
 
@@ -148,14 +151,11 @@ class ImgTextEncoder(CrossEncoder):
         )
 
         h : TensorType["batch", "sequence", "d_model"] = out.hidden_states[-2]
+        h = self.embed(h)
 
-        # Extract hidden state corresponding to CLS token (first token)
-        cls_h : TensorType["batch", "d_model"] = h[:, 0, :]
-
-        scores_pred = self.score_head(cls_h).squeeze()
+        scores_pred = self.score_head(h).squeeze()
         loss = None
         if scores is not None:
-            # As per sentence transformers, BCE with logits is better than MSE
             loss = self.loss_fn(scores_pred, scores)
             
         return ModelOutput(

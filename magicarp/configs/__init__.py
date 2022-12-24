@@ -11,12 +11,19 @@ class ModelConfig:
 
     :param model_type: Name of registered model to use. This is used to determine the model class to use. If multiple, separate with a comma.
     :type model_type: str
+
+    :param sequence_length: Maximum sequence length for the model. May not always be used over model_position_embeddings
+    :type sequence_length: int
+
+    :param embed_method: Method to use for embedding. Options are cls, mean, masked_sum
+    :type embed_method: str
     """
     
     model_path : str = None
     tokenizer_path : str = None
     model_type : Optional[str] = None
     sequence_length : int = 1024
+    embed_method : str = None
 
     @classmethod
     def from_dict(cls, config: Dict[str, Any]):
@@ -25,8 +32,22 @@ class ModelConfig:
 @dataclass
 class TrainConfig:
     """
+    Configuration for trainer.
 
+    :param loss_type: Type of loss to use. Options are ranking, pairwise, densepairwise
+    :type loss_type: str
+
+    :param reward_type: Type of reward to use. Options are End or Step. End means reward is computed at final step, Step means reward is computed at every step.
+    :type reward_type: str
+
+    :param query_modality: Which modality to use as query (as opposed to response). Options are A or B. I.e. in image generation the prompt is the query.
+    :type query_modality: str
     """
+    # Loss
+    loss_type : str = None
+    reward_type : str = "End"
+    query_modality : str = "A"
+
     # Optimizer parameters
     learning_rate : float = 1e-4
     weight_decay : float = 0

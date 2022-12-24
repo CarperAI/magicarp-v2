@@ -6,6 +6,8 @@ import wandb
 import os
 
 from magicarp.configs import TrainConfig
+from magicarp.losses import CrossEncoderLoss
+from magicarp.losses.loading import get_loss
 from magicarp.models import CrossEncoder, ModelOutput
 from magicarp.pipeline  import Pipeline
 from magicarp.utils import get_intervals, wandb_start
@@ -13,6 +15,7 @@ from magicarp.utils import get_intervals, wandb_start
 class Trainer:
     def __init__(self, model : CrossEncoder, config : TrainConfig):
         self.model : torch.nn.Module = model
+        self.loss : CrossEncoderLoss = get_loss(config.loss_type)(config)
         self.config : TrainConfig = config
 
         self.model.to(self.config.device)
@@ -22,7 +25,7 @@ class Trainer:
             lr=config.learning_rate,
             weight_decay=config.weight_decay,
             eps=config.adam_epsilon
-            )
+        )
 
         rampup_Length = config.rampup_length
         rampdown_Length = config.rampdown_length
@@ -80,10 +83,11 @@ class Trainer:
         )
 
         for epoch in range(epochs):
-            for i, (a, b, scores) in enumerate(loader):
+            for i, (a, b) in enumerate(loader):
                 self.optimizer.zero_grad()
 
-                y : ModelOutput = self.model((a, b), scores)
+                y : ModelOutput = self.loss(self.model((a, b)))
+
                 loss = y.loss
                 loss.backward()
 
@@ -115,8 +119,8 @@ class Trainer:
         steps = len(loader)
 
         with torch.no_grad():
-            for i, (a, b, scores) in enumerate(loader):
-                y : ModelOutput = self.model((a, b), scores)
+            for i, (a, b) in enumerate(loader):
+                y : ModelOutput = self.loss(self.model((a, b)))
                 loss = y.loss
                 avg_loss += loss
 

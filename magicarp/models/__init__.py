@@ -52,7 +52,7 @@ class CrossEncoder(nn.Module):
         pass
 
     @abstractclassmethod
-    def  forward(self, x : Iterable[DataElement], scores : Optional[TensorType["batch"]] = None, compute_loss : bool = False) -> ModelOutput:
+    def  forward(self, x : Iterable[DataElement], scores : Optional[TensorType["batch"]] = None) -> ModelOutput:
         """
         Forward call for CrossEncoder. Takes one or more DataElements and returns a ModelOutput
 
@@ -62,11 +62,37 @@ class CrossEncoder(nn.Module):
         :param scores: Scores for pairwise relevance.
         :type scores: Optional[TensorType["batch"]]
 
-        :param compute_loss: Whether to compute loss or not.
-        :type compute_loss: bool
-
         :return: Output of model, consisting of loss (if scores provided) and scores.
         :rtype: ModelOutput
         """
         pass
+
+    def embed(
+        self,
+        h : TensorType["batch", "seq_len", "d_model"],
+        mask : Optional[TensorType["batch", "seq_len"]] = None
+    ) -> TensorType["batch", "d_model"]:
+        """
+        Reduces logits along sequence for input into score head.
+
+        :param h: Model logits
+        :type h: TensorType["batch", "seq_len", "d_model"]
+
+        :param mask: Mask for attention. Only needed by some embedding methods.
+        :type mask: Optional[TensorType["batch", "seq_len"]]
+
+        :return: Latent to pass to score head
+        :rtype: TensorType["batch", "d_model"]
+        """
+        if self.config.embed_method == "cls":
+            h : TensorType["b", "d"] = h[:, 0, :]
+        elif self.config.embed_method == "mean":
+            h : TensorType["b", "d"] = h.mean(dim=1)
+        elif self.config.embed_method == "masked_sum":
+            h : TensorType["b", "d"] = (h * mask.unsqueeze(-1)).sum(dim=1) / mask.sum(dim=1).unsqueeze(-1)
+        else:
+            raise ValueError(f"Embed method {self.config.embed_method} not supported.")
+            
+        return h
+
 

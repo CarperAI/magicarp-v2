@@ -9,6 +9,7 @@ import torch
 import numpy as np
 from torch.utils.data import DataLoader
 import random
+import einops as eo
 
 from magicarp.pipeline import Pipeline
 from magicarp.data import ImageElement, TextElement, DataElement
@@ -263,7 +264,7 @@ class InstructRPCD(RPCDPipeline):
                 Iterable[Image.Image],
                 Iterable[Iterable[str]]
             ],
-            Iterable[DataElement] # [ImageElement, TextElement, TextElement, ...] 
+            Iterable[DataElement] # [ImageElement0, ImageElement0,..., TextElement0, TextElement1, ...] 
         ]
 
     def __getitem__(self, idx):
@@ -280,8 +281,11 @@ class InstructRPCD(RPCDPipeline):
 
             img_inputs, txt_inputs = call_feature_extractor(img_batch, text_batch)
 
+            b = len(txt_inputs.input_ids)
+            # repeat the image features b times to match text batch
+
             return [
-                ImageElement(pixel_values=img_inputs.pixel_values).to(self.device),
+                ImageElement(pixel_values=img_inputs.pixel_values.repeat(b, 1, 1,1)).to(self.device),
                 TextElement(input_ids=txt_inputs.input_ids, attention_mask=txt_inputs.attention_mask).to(self.device)
             ]
         
