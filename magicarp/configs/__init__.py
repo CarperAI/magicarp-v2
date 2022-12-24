@@ -15,7 +15,7 @@ class ModelConfig:
     :param sequence_length: Maximum sequence length for the model. May not always be used over model_position_embeddings
     :type sequence_length: int
 
-    :param embed_method: Method to use for embedding i.e. cls embedding, mean pooling, etc. Not used by all methods.
+    :param embed_method: Method to use for embedding. Options are cls, mean, masked_sum
     :type embed_method: str
     """
     
@@ -34,7 +34,7 @@ class TrainConfig:
     """
     Configuration for trainer.
 
-    :param loss_type: Type of loss to use. Options are instructranking, pairwise, densepairwise
+    :param loss_type: Type of loss to use. Options are ranking, pairwise, densepairwise
     :type loss_type: str
 
     :param reward_type: Type of reward to use. Options are End or Step. End means reward is computed at final step, Step means reward is computed at every step.
