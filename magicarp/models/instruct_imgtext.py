@@ -11,22 +11,14 @@ from magicarp.models.imgtext import ImgTextEncoder
 class InstructImgText(ImgTextEncoder):
     def forward(self, x : Iterable[DataElement], compute_loss : bool = False) -> ModelOutput:
         """
-            Input should be ImageElement followed by TextElement.
-            Varies behavior depending on number of images provided.
-            If number of images matches number of text elements, then
-            each image is paired with its corresponding text element and score is computed.
-            If number of images is 1, then the image is paired with all text elements.
-            If compute loss is true, the second case is assumed, and loss for all comparisons
-            is computed.
+            Forward pass through the model, computes scores for each image-text pair. If compute_loss is True, also computes loss,
+            given some loss function.
         """
         x_img : ImageElement = x[0]
         x_txt : TextElement = x[1]
 
-        k = len(x_txt.input_ids) # length of rankings, i.e. top k
-        pairwise : bool = len(x_img.pixel_values) == k
-
-        if not pairwise:
-            x_img.pixel_values = x_img.pixel_values.repeat(k, 1, 1, 1)
+        if len(x_img) != len(x_txt):
+            raise ValueError("Number of images and text elements must match")
         
         scores : TensorType["k"] = super().forward((x_img, x_txt), scores = None).scores 
         out = ModelOutput(scores = scores)
