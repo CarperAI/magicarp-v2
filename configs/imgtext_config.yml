@@ -2,9 +2,10 @@ model:
   model_path: "google/vit-base-patch16-224,bert-base-uncased"
   tokenizer_path: "bert-base-uncased"
   sequence_length: 514
-  embed_method: "cls"
+  embed_method: "mean"
 
 train:
+  loss_type: ranking
   learning_rate: 1.0e-4
   batch_size: 1
   pin_memory: False
