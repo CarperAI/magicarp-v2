@@ -1,2 +1,2 @@
 # magiCARP-v2
-magiCARP is an API used for reward model/reranker training.
+magiCARP is an API used for unsupervised reward model/reranker training.
