@@ -12,8 +12,10 @@ from magicarp.losses import register_loss, EndLoss, StepLoss
 @register_loss
 class Pairwise(EndLoss):
     """
-        Assuming first modality is A and second modality is B, this loss is intended for data where humans are given one A and two choices for B. Scores should include
-        model output for A with accepted B and A with rejected B. The scores provided should be an even length tensor with the first half containing the scores for the
+        Loss for pairwise comparisons. Assuming first modality is A and second modality is B,
+        this loss is intended for data where humans are given one A and two choices for B.
+        Scores should include model output for A with accepted B and A with rejected B.
+        The scores provided should be an even length tensor with the first half containing the scores for the
         accepted Bs and the second half containing the scores for the rejected Bs.
     """
 

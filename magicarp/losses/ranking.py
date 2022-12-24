@@ -9,9 +9,9 @@ from magicarp.models import ModelOutput
 from magicarp.losses import register_loss, EndLoss
 
 @register_loss
-class InstructRanking(EndLoss):
+class Ranking(EndLoss):
     """
-        InstructGPT type ranking loss. Assuming A is the data for the first modality and B is the data for the second modality, this loss is intended for cases where
+        Loss for rankings. Assuming A is the data for the first modality and B is the data for the second modality, this loss is intended for cases where
         batches consist of a single A and an ordering of Bs based on human preference based ranking of the Bs for how well they "fit" A. Inputs to the loss are ordered
         (w.r.t the human ranking) scores that compare the single A against each B.
     """
