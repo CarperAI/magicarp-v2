@@ -1,15 +1,16 @@
-import torch
+from accelerate import Accelerator
 import wandb
 
-from magicarp.models import ModelOutput
+from magicarp.models import CrossEncoder, ModelOutput
 from magicarp.pipeline import Pipeline
+from magicarp.configs import TrainConfig
 from magicarp.trainer import Trainer
-from magicarp.utils import wandb_start, get_intervals
+from magicarp.utils import get_intervals, wandb_start
 
-class InstructTrainer(Trainer):
-    """
-    Trainer that trains reranker directly from rankings without scores
-    """
+class AcceleratedTrainer(Trainer):
+    def __init__(self, model : CrossEncoder, config : TrainConfig):
+        super().__init__(model, config)
+        self.accelerator = Accelerator()
 
     def train(self, pipeline : Pipeline):
         epochs = self.config.num_epochs
@@ -36,13 +37,19 @@ class InstructTrainer(Trainer):
             pin_memory=self.config.pin_memory
         )
 
+        accelerator = Accelerator()
+        self.model, self.optimizer, loader, self.scheduler = accelerator.prepare(
+            self.model, self.optimizer, loader, self.scheduler
+        )
+
         for epoch in range(epochs):
-            for i, data in enumerate(loader):
+            for i, (a, b) in enumerate(loader):
                 self.optimizer.zero_grad()
 
-                y : ModelOutput = self.model(data, compute_loss = True)
+                y : ModelOutput = self.loss(self.model((a, b)))
+
                 loss = y.loss
-                loss.backward()
+                accelerator.backward(loss)
 
                 self.optimizer.step()
                 self.scheduler.step()
@@ -60,24 +67,4 @@ class InstructTrainer(Trainer):
                 if intervals["val"] and do_val:
                     self.validate(pipeline)
 
-    def validate(self, pipeline : Pipeline):
-        loader = pipeline.create_validation_loader(
-            batch_size=self.config.batch_size,
-            num_workers=self.config.num_workers,
-            shuffle=False,
-            pin_memory=self.config.pin_memory
-        )
 
-        avg_loss = 0
-        steps = len(loader)
-
-        with torch.no_grad():
-            for i, data in enumerate(loader):
-                y : ModelOutput = self.model(data, compute_loss = True)
-                loss = y.loss
-                avg_loss += loss
-
-        avg_loss /= steps
-        print(f"Validation Loss: {avg_loss}")
-        if self.config.wandb_project is not None:
-            wandb.log({"val_loss": avg_loss})

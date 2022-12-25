@@ -2,7 +2,11 @@ from typing import Dict
 
 import wandb
 
+from torch import nn
+
 from magicarp.configs import TrainConfig
+from magicarp.models import CrossEncoder
+from magicarp.losses import CrossEncoderLoss
 
 def get_intervals(config : TrainConfig, steps : int) -> Dict[str, bool]:
     """
@@ -31,3 +35,17 @@ def wandb_start(config : TrainConfig):
     :type config: TrainConfig
     """
     wandb.init(project=config.wandb_project, entity=config.wandb_entity, config=config.__dict__)
+
+class AttachLoss(nn.Module):
+    """
+        Attach a model to a loss function to produce a combined model
+        that directly outputs loss. Currenty only works with EndLoss.  
+    """
+
+    def __init__(self, model : CrossEncoder, loss_fn : CrossEncoderLoss):
+        super().__init__()
+        self.model = model
+        self.loss_fn = loss_fn
+
+    def __forward__(self, **kwargs):
+        return self.loss_fn(self.model(**kwargs)).loss
