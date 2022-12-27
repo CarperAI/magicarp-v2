@@ -21,13 +21,8 @@ class TextTextEncoder(CrossEncoder):
         model_path = config.model_path
 
         self.config = config
+        # inits model and tokenizer
         super().__init__(config=config)
-
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.model = AutoModel.from_pretrained(model_path)
-
-        self.tokenizer.add_tokens(["[SEP]", "[CLS]"])
-        self.model.resize_token_embeddings(len(self.tokenizer))
 
         self.pad_token_id = self.tokenizer.pad_token_id
         self.text_max_length : int = self.model.config.max_position_embeddings
