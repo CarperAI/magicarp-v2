@@ -118,11 +118,13 @@ class Trainer:
         avg_loss = 0
         steps = len(loader)
 
+        self.model.eval()
         with torch.no_grad():
             for i, (a, b) in enumerate(loader):
                 y : ModelOutput = self.loss(self.model((a, b)))
                 loss = y.loss
                 avg_loss += loss
+        self.model.train()
 
         avg_loss /= steps
         print(f"Validation Loss: {avg_loss}")

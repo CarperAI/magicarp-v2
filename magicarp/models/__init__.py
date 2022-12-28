@@ -5,10 +5,11 @@ from dataclasses import dataclass
 
 from torch import nn
 import torch
-from transformers import AutoConfig
+from transformers import AutoConfig, AutoModel, AutoTokenizer
 
 from magicarp.data import DataElement
 from magicarp.configs import ModelConfig
+from magicarp.utils import freeze_bottom_causal_layers
 
 @dataclass
 class ModelOutput:
@@ -29,8 +30,21 @@ class CrossEncoder(nn.Module):
         tf_cfg = AutoConfig.from_pretrained(config.model_path)
         self.score_head = nn.Linear(tf_cfg.hidden_size, 1)
 
+        # For LM
+        self.tokenizer = AutoTokenizer.from_pretrained(config.model_path)
+        self.model = AutoModel.from_pretrained(config.model_path)
+
+        # Add sep to tokenizer to separate image and text
+        self.tokenizer.add_tokens(["[SEP]"])
+        self.model.resize_token_embeddings(len(self.tokenizer))
+
         self.loss_fn : Callable = None
         self.set_loss_fn(torch.nn.MSELoss()) # Defaults to MSE
+
+        # Layer freezing
+        if config.unfrozen_layers is not None:
+            freeze_bottom_causal_layers(self.model, config.unfrozen_layers)
+
     
     def set_loss_fn(self, loss_fn : Callable):
         self.loss_fn = loss_fn
@@ -94,5 +108,3 @@ class CrossEncoder(nn.Module):
             raise ValueError(f"Embed method {self.config.embed_method} not supported.")
             
         return h
-
-

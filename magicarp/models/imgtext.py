@@ -29,6 +29,7 @@ class ImgTextEncoder(CrossEncoder):
         self.config = config
         new_config = replace(config) # deep copy
         new_config.model_path = model_path
+        # Initializes the main model and tokenizer as well
         super().__init__(config=new_config)
 
         # For ViT
@@ -37,14 +38,6 @@ class ImgTextEncoder(CrossEncoder):
 
         for param in self.img_embedder.parameters():
             param.requires_grad = False
-
-        # For LM
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.model = AutoModel.from_pretrained(model_path)
-
-        # Add sep to tokenizer to separate image and text
-        self.tokenizer.add_tokens(["[SEP]"])
-        self.model.resize_token_embeddings(len(self.tokenizer))
 
         self.pad_token_id = self.tokenizer.pad_token_id
 
