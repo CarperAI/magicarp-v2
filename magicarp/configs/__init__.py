@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 
 from dataclasses import dataclass
 import yaml
@@ -17,6 +17,9 @@ class ModelConfig:
 
     :param embed_method: Method to use for embedding. Options are cls, mean, masked_sum
     :type embed_method: str
+
+    :param unfrozen_layers: Freeze all layers in the LM except last N. If float is provided, it is interpreted as a proportion of layers to unfreeze.
+    :type unfrozen_layers: Union[int, float]
     """
     
     model_path : str = None
@@ -24,6 +27,7 @@ class ModelConfig:
     model_type : Optional[str] = None
     sequence_length : int = 1024
     embed_method : str = None
+    unfrozen_layers : Union[int, float] = None
 
     @classmethod
     def from_dict(cls, config: Dict[str, Any]):

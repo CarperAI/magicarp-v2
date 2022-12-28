@@ -9,6 +9,7 @@ from transformers import AutoConfig, AutoModel, AutoTokenizer
 
 from magicarp.data import DataElement
 from magicarp.configs import ModelConfig
+from magicarp.utils import freeze_bottom_causal_layers
 
 @dataclass
 class ModelOutput:
@@ -39,6 +40,11 @@ class CrossEncoder(nn.Module):
 
         self.loss_fn : Callable = None
         self.set_loss_fn(torch.nn.MSELoss()) # Defaults to MSE
+
+        # Layer freezing
+        if config.unfrozen_layers is not None:
+            freeze_bottom_causal_layers(self.model, config.unfrozen_layers)
+
     
     def set_loss_fn(self, loss_fn : Callable):
         self.loss_fn = loss_fn
