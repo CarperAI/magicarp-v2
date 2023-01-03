@@ -259,7 +259,7 @@ class InstructRPCD(RPCDPipeline):
 
         self.max_comments = max_comments
 
-        self.prep_fn : Callable[
+        self.prep : Callable[
             [
                 Iterable[Image.Image],
                 Iterable[Iterable[str]]
