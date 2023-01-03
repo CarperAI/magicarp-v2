@@ -19,7 +19,7 @@ class Pairwise(EndLoss):
         accepted Bs and the second half containing the scores for the rejected Bs.
     """
 
-    def __forward__(
+    def forward(
         self,
         model_out : ModelOutput,
         expected_scores : Optional[TensorType["batch"]] = None
