@@ -1,5 +1,6 @@
 from accelerate import Accelerator
 import wandb
+import torch
 
 from magicarp.models import CrossEncoder, ModelOutput
 from magicarp.pipeline import Pipeline
@@ -67,4 +68,31 @@ class AcceleratedTrainer(Trainer):
                 if intervals["val"] and do_val:
                     self.validate(pipeline)
 
+    def validate(self, pipeline : Pipeline):
+        if pipeline.val_set is not None:
+            pipeline.val_set.prep = pipeline.prep
+            
+        loader = pipeline.create_validation_loader(
+            batch_size=self.config.batch_size * self.config.val_batch_multiplier,
+            num_workers=self.config.num_workers,
+            shuffle=False,
+            pin_memory=self.config.pin_memory
+        )
 
+        loader = self.accelerator.prepare(loader)
+
+        avg_loss = 0
+        steps = len(loader)
+
+        self.model.eval()
+        with torch.no_grad():
+            for i, (a, b) in enumerate(loader):
+                y : ModelOutput = self.loss(self.model((a, b)))
+                loss = y.loss
+                avg_loss += loss
+        self.model.train()
+
+        avg_loss /= steps
+        print(f"Validation Loss: {avg_loss}")
+        if self.config.wandb_project is not None:
+            wandb.log({"val_loss": avg_loss})

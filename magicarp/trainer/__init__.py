@@ -108,6 +108,9 @@ class Trainer:
                     self.validate(pipeline)
 
     def validate(self, pipeline : Pipeline):
+        if pipeline.val_set is not None:
+            pipeline.val_set.prep = pipeline.prep
+            
         loader = pipeline.create_validation_loader(
             batch_size=self.config.batch_size,
             num_workers=self.config.num_workers,
