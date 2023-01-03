@@ -265,7 +265,7 @@ class InstructRPCD(RPCDPipeline):
                 Iterable[Iterable[str]]
             ],
             Iterable[DataElement] # [ImageElement0, ImageElement0,..., TextElement0, TextElement1, ...] 
-        ]
+        ] = None 
 
     def __getitem__(self, idx):
         id = self.ids[idx]
