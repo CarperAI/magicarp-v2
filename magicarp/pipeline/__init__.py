@@ -43,6 +43,7 @@ class Pipeline(Dataset):
         # Preprocessing function for both modalities
         # Can return a single data element or multiple
         self.prep : Callable[[Iterable[Any], Iterable[Any]], Iterable[DataElement]]
+        self.val_set = None
     
     @abstractclassmethod
     def __getitem__(self, idx : int) -> Tuple[Any, Any]:
@@ -112,9 +113,12 @@ class Pipeline(Dataset):
         """
         return
 
-    @abstractclassmethod
     def create_validation_loader(self, **kwargs) -> DataLoader:
         """
         Create a dataloader for validation data. 
         """
-        pass
+        if self.val_set is None:
+            raise Exception("Validation set not created. Call partition_validation_set() first")
+
+        return self.val_set.create_loader(**kwargs)
+
