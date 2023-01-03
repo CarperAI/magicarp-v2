@@ -1,5 +1,5 @@
 from abc import abstractclassmethod
-from typing import Tuple, Any, Dict, Iterable, Callable
+from typing import Tuple, Any, Dict, Iterable, Callable, List
 
 import sys
 
@@ -81,16 +81,15 @@ class Pipeline(Dataset):
         if self.prep is None:
             raise ValueError("Preprocessing function must be set before creating a dataloader.")
         
-        def collate(batch : Iterable[Tuple[Any, Any]]) -> Tuple[DataElement, DataElement]:
+        def collate(batch : Iterable[List]) -> Tuple[DataElement, DataElement]:
             """
             Collates a batch of data into a tuple of tensors. This function is passed to the dataloader.
             """
 
-            data_A, data_B = zip(*batch)
-            data_A = list(data_A)
-            data_B = list(data_B)
-
-            res = self.prep(data_A, data_B)
+            data = zip(*batch)
+            data = [list(d) for d in data]
+            res = self.prep(*data)
+            
             if type(res) is list or type(res) is tuple:
                 res = [r.to(device) for r in res]
             else:
@@ -100,10 +99,10 @@ class Pipeline(Dataset):
 
         return DataLoader(self, collate_fn = collate, **kwargs)
 
-    @abstractclassmethod
     def partition_validation_set(self, val_size : float = 0.1, shuffle : bool = False):
         """
         Partitions the dataset into a training and validation set. This function should be called before creating a dataloader.
+        In some cases, a val set might be defined in constructor. Default behavior tends to those cases.
 
         :param val_size: The proportion of the dataset to use for validation. Defaults to 0.1.
         :type val_size: float
@@ -111,7 +110,7 @@ class Pipeline(Dataset):
         :param shuffle: Whether to shuffle the dataset before partitioning. Defaults to True.
         :type shuffle: bool
         """
-        pass
+        return
 
     @abstractclassmethod
     def create_validation_loader(self, **kwargs) -> DataLoader:
