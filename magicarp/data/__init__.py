@@ -62,7 +62,10 @@ class DataElement:
 
         cls = type(data[0])
         res = cls(
-            **{k : torch.cat([getattr(d, k) for d in data], dim=0) for k in data[0].__dict__.keys()}
+            **{k : torch.cat(
+                [getattr(d, k) for d in data], dim=0
+                ) if isinstance(getattr(data[0], k), Tensor) else getattr(data[0], k) \
+                    for k in data[0].__dict__.keys()}
         )
 
         return res
