@@ -46,6 +46,8 @@ class TrainConfig:
 
     :param query_modality: Which modality to use as query (as opposed to response). Options are A or B. I.e. in image generation the prompt is the query.
     :type query_modality: str
+
+    :param val_batch_multiplier: Multiplier for batch size during validation.
     """
     # Loss
     loss_type : str = None
@@ -74,6 +76,7 @@ class TrainConfig:
     save_dir : str = None
     val_interval : int = 1000
     val_split : float = 0.1
+    val_batch_multiplier : int = 1
 
     # Misc parameters
     device : str = "cuda"

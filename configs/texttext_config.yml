@@ -1,0 +1,15 @@
+model:
+  model_path: roberta-large
+  tokenizer_path: roberta-base
+  sequence_length: 514
+  embed_method: mean
+  unfrozen_layers: 2
+
+train:
+  loss_type: pairwise
+  learning_rate: 1.0e-4
+  batch_size: 4
+  pin_memory: False
+  log_interval: 1
+  val_interval: 10
+  val_batch_multiplier: 8
