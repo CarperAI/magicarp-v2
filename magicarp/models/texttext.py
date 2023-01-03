@@ -37,20 +37,19 @@ class TextTextEncoder(CrossEncoder):
 
         input_A = self.tokenizer(
             input_A,
-            padding=True,
+            padding='max_length',
             truncation=True,
             max_length=self.text_max_length // 2,
             return_tensors="pt"
         )
 
-        is_even = self.text_max_length % 2 == 0
+        is_odd = self.text_max_length % 2 != 0
 
-        # Leaving room for CLS token is different if max size is even
         input_B = self.tokenizer(
             input_B,
-            padding=True,
+            padding='max_length',
             truncation=True,
-            max_length=self.text_max_length // 2 + 1 if is_even else self.text_max_length // 2,
+            max_length=self.text_max_length // 2 + 1 if is_odd  else self.text_max_length // 2,
             return_tensors="pt"
         )
 
