@@ -31,7 +31,7 @@ class CrossEncoder(nn.Module):
         self.score_head = nn.Linear(tf_cfg.hidden_size, 1)
 
         # For LM
-        self.tokenizer = AutoTokenizer.from_pretrained(config.model_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(config.tokenizer_path)
         self.model = AutoModel.from_pretrained(config.model_path)
 
         # Add sep to tokenizer to separate image and text
