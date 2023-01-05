@@ -20,10 +20,13 @@ def get_intervals(config : TrainConfig, steps : int) -> Dict[str, bool]:
     :return: A dictionary containing the intervals for each task.
     :rtype: Dict[str, bool]
     """
+    do_log = config.log_interval > 0
+    do_save = config.save_interval > 0
+    do_val = config.val_interval > 0
     return {
-        "log" : steps % config.log_interval == 0,
-        "save" : steps % config.save_interval == 0,
-        "val" : steps % config.val_interval == 0
+        "log" : do_log and steps % config.log_interval == 0,
+        "save" : do_save and steps % config.save_interval == 0,
+        "val" : do_val and steps % config.val_interval == 0
     }
 
 def wandb_start(config : TrainConfig):
